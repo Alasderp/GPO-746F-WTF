@@ -1,0 +1,82 @@
+1. Open Terminal and run
+
+sudo raspi-config
+
+2. Select Interface Options -> Serial Port
+
+Say NO to enabling the login shell at startup and YES to enabling the serial port.
+
+Exit, and reboot so your serial port configuration takes effect.
+
+
+3. Open terminal again and run 
+
+sudo apt install minicom
+
+Then connect to the Clipper HAT 
+
+minicom -b 115200 -D /dev/ttyS0
+
+(for Pi 5 minicom -b 115200 -D /dev/ttyAMA0)
+
+
+
+4. Enter "AT" and hit Enter - you should get an OK response
+
+Run AT+CREG? to check you are connected to the network, you should see "0,1"
+
+Run AT+CSQ to check signal strength - 99,99 means no conection, amke sure you have an antenna attached ;) 
+
+5. Test by sending an SMS or receiving
+
+Set your SMS centre number - below is for Giff Gaff
+AT+CSCA="+447802002606"
+
+Run below to format SMS for text
+AT+CMGF=1
+
+Then enter below command, write your text and press Ctrl + Z
+
+You can also omit the country code, for example start the number with "07"
+
+AT+CMGS="+44mobilenumber"
+
+To fetch unread SMS messages try
+
+AT+CMGL="REC UNREAD"
+
+7. To exit minicom try Ctrl + A then hit X
+
+
+
+
+
+
+FILE SYSTEM
+
+1. Run the below command to check how much memory in current dir, in bytes
+
+<total>, <used>
+
+AT+FSMEM 
++FSMEM: C:(851968,225280)
+
+(851968 - 225280) / 1024 gives around 600kb of memory
+
+2. List any files/dirs using AT+FSLS
+
+3. Upload a file
+
+Count number of bytes with "wc -c UK_dial_tone.mp3"
+
+Create a hexdump "hexdump UK_dial_tone.mp3 > hexdump.txt"
+
+Run
+
+AT+CFTRANRX="c:/UK_dial_tone.mp3",61632
+
+After the ">" paste the contents of the hexdump
+
+
+
+
