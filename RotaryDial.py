@@ -18,11 +18,18 @@ class RotaryDial:
         self.last = 1
         self.phoneNumber = ''
         self.DiallingNumber = False
-        self.RotaryDialInitiated = False
+        self.DiallingStarted = False
+        self.DiallingFinished = False
         self.TimeLastNumberDialled = 0
         
-    def dialingStarted(self):
-        return self.RotaryDialInitiated
+    def isDialingFinished(self):
+        return self.DiallingFinished
+        
+    def isDialingStarted(self):
+        return self.DiallingStarted
+    
+    def getPhoneNumber(self):
+        return self.phoneNumber
 
     '''
     When the rotary dial is pulled back, the circuit is complete
@@ -36,41 +43,43 @@ class RotaryDial:
     In this code the Pink wire is not used, and the time from last digit dialled is instead counted
     '''
     def dialHandler(self):
+        timeHandsetLifted = time.time()
         while True:
             
-            #If dialling has started, and half a second has elapsed
+            #If no activity after 15 seconds break out of loop
+            if(not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
+                print("No activity on dial, thread self-destructing")
+                break
+            
+            #If dialling has started, and 1/4 of a second has elapsed
             #Assume a single digit has been dialled
-            if(DiallingNumber and (time.time() - TimeLastNumberDialled) > 0.5):
+            if(self.DiallingNumber and (time.time() - self.TimeLastNumberDialled) > 0.25):
                 
-                if(pulses == 11):
-                    phoneNumber = phoneNumber + '0'
+                if(self.pulses == 11):
+                    self.phoneNumber = self.phoneNumber + '0'
                 else:
-                    phoneNumber = phoneNumber + str(pulses - 1)
-
-                print("Phone Number: " + phoneNumber)
-                
-                RotaryDialInitiated = True
-                
+                    self.phoneNumber = self.phoneNumber + str(self.pulses - 1)
+                                
                 #Reset the state, ready for next number to be dialled
-                DiallingNumber = False
-                pulses = 0
+                self.DiallingNumber = False
+                self.pulses = 0
             
             #If time since last number dialled > 5 secs assume the complete number is dialled
-            if(RotaryDialInitiated and (time.time() - TimeLastNumberDialled) > 5):
-                print("Finished Dialling The Number: " + phoneNumber)
-                break;
+            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > 5):
+                self.DiallingFinished = True
+                break
             
             if GPIO.event_detected(18):
                 
+                self.DiallingStarted = True
+                
                 current = GPIO.input(18)           
 
-                if(last != current):                      
+                if(self.last != current):                      
                     if(current != 0):
-                        TimeLastNumberDialled = time.time()
-                        DiallingNumber = True
-                        pulses = pulses + 1
+                        self.TimeLastNumberDialled = time.time()
+                        self.DiallingNumber = True
+                        self.pulses = self.pulses + 1
                         time.sleep(0.1)
 
-                    last = GPIO.input(18)
-                    
-                    
+                    self.last = GPIO.input(18)               

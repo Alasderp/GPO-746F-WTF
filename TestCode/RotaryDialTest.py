@@ -25,7 +25,7 @@ Count how many times the circuit is interrupted to calculate the number dialled
 try:
     while True:
         
-        if(dialStarted and (time.time() - start) > 0.5):
+        if(dialStarted and (time.time() - start) > 0.25):
             
             if(pulses == 11):
                 phoneNumber = phoneNumber + '0'

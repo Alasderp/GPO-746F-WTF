@@ -21,3 +21,8 @@ class CradleSwitch:
         elif GPIO.input(21) == True:
             #print("Handset is placed on cradle")
             return False
+        
+    def waitForHandsetReplacement(self):
+        while(not GPIO.input(21)):
+            time.sleep(0.2)
+    

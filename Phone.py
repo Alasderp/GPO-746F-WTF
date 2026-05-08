@@ -2,6 +2,8 @@
 
 import RPi.GPIO as GPIO
 import time
+import threading
+import pygame
 
 from CradleSwitch import CradleSwitch
 from RotaryDial import RotaryDial
@@ -34,6 +36,9 @@ try:
     #Button B on the Clipper LTE Hat
     GPIO.setup(16,GPIO.IN,pull_up_down=GPIO.PUD_UP)
     GPIO.add_event_detect(16, GPIO.FALLING, callback=button_B_callback, bouncetime=200)
+    
+    pygame.mixer.init()
+    pygame.mixer.music.load("./MiscDocs/UK_dial_tone.mp3")
 
     while True:
         
@@ -47,10 +52,35 @@ try:
         #Handset lifted and no call incoming. Prepare to read from rotary dial.    
         elif(cradleSwitch.isHandsetLifted() and not callIncoming):
             print("No call incoming, Line already busy (Handset Lifted)")
-            print(rotaryDial.dialingStarted())
-            #Make async call to rotary dial and prepare to read in a telephone number
-            #Then wait until dialling complete or handset returned to cradle
             
+            #Play the dial tone
+            pygame.mixer.music.play(-1)
+            
+            #Create rotary dial thread and prepare to read in a telephone number
+            rotaryDial = RotaryDial() 
+            dialThread = threading.Thread(target=rotaryDial.dialHandler)
+            dialThread.start()
+            
+            #Then wait until dialling complete/timed-out or handset returned to cradle
+            while(dialThread.is_alive() and cradleSwitch.isHandsetLifted()):
+                time.sleep(1)
+                #TODO - Set flag to only execute this if statement once
+                if(rotaryDial.isDialingStarted()):
+                    pygame.mixer.music.stop()
+        
+            #If a number was dialled, do something with it.
+            #Else play a message telling user to hang-up and re-dial
+            if(rotaryDial.getPhoneNumber()):
+                print("Phone Number dialled: " + rotaryDial.getPhoneNumber())
+            else:             
+                #If Dialling not started play an error message
+                pygame.mixer.music.stop()
+                
+            cradleSwitch.waitForHandsetReplacement()
+            pygame.mixer.music.stop()
+            print("Handset replaced after call")
+            
+                            
             
         #Handset not lifted and call incoming. Ring the bells until handset lifted or call is dropped.    
         elif(not cradleSwitch.isHandsetLifted() and callIncoming):
