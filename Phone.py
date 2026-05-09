@@ -15,15 +15,18 @@ rotaryDial = RotaryDial()
 global callIncoming
 callIncoming = False
 
+global callOutgoing
+callOutgoing = False
+
 def button_A_callback(channel):
     print("Button A was pushed")
     global callIncoming
-    callIncoming = True
+    callIncoming = not callIncoming
     
 def button_B_callback(channel):
-    print("Button B was pushed")
-    global callIncoming
-    callIncoming = False
+    global callOutgoing
+    callOutgoing = not callOutgoing
+    print("Button B was pushed, outgoing call flag set to: " + str(callOutgoing))
 
 try:
 
@@ -64,18 +67,42 @@ try:
             #Then wait until dialling complete/timed-out or handset returned to cradle
             while(dialThread.is_alive() and cradleSwitch.isHandsetLifted()):
                 time.sleep(1)
-                #TODO - Set flag to only execute this if statement once
+                #TODO - Set flag to only execute this if statement once when sending AT command
                 if(rotaryDial.isDialingStarted()):
                     pygame.mixer.music.stop()
+        
+            rotaryDial.endListening()
         
             #If a number was dialled, do something with it.
             #Else play a message telling user to hang-up and re-dial
             if(rotaryDial.getPhoneNumber()):
                 print("Phone Number dialled: " + rotaryDial.getPhoneNumber())
+                
+                #Initiate an outgoing all here
+                
+                #Create another dial thread in case presented with an in-call menu
+                rotaryDial = RotaryDial() 
+                dialThread = threading.Thread(target=rotaryDial.dialHandler)
+                dialThread.start()
+                
+                while(callOutgoing and cradleSwitch.isHandsetLifted()):
+                    time.sleep(0.1)
+                    #If a number was dialed, send this via AT command and spawn new dial thread
+                    if(not dialThread.is_alive()):
+                        print("In-call Number dialled: " + rotaryDial.getPhoneNumber())
+                        rotaryDial = RotaryDial() 
+                        dialThread = threading.Thread(target=rotaryDial.dialHandler)
+                        dialThread.start()
+                        
+                        
+
             else:             
                 #If Dialling not started play an error message
                 pygame.mixer.music.stop()
-                
+            
+            print("Call is ended, waiting for handset to be replaced")
+            
+            rotaryDial.endListening()
             cradleSwitch.waitForHandsetReplacement()
             pygame.mixer.music.stop()
             print("Handset replaced after call")

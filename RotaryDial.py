@@ -21,6 +21,7 @@ class RotaryDial:
         self.DiallingStarted = False
         self.DiallingFinished = False
         self.TimeLastNumberDialled = 0
+        self.EndListening = False
         
     def isDialingFinished(self):
         return self.DiallingFinished
@@ -30,6 +31,10 @@ class RotaryDial:
     
     def getPhoneNumber(self):
         return self.phoneNumber
+    
+    def endListening(self):
+        self.EndListening = True
+
 
     '''
     When the rotary dial is pulled back, the circuit is complete
@@ -46,6 +51,10 @@ class RotaryDial:
         timeHandsetLifted = time.time()
         while True:
             
+            if self.EndListening:
+                print("Rotary Dial EndListening flag set to true, thread self-destructing")
+                break
+                                        
             #If no activity after 15 seconds break out of loop
             if(not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
                 print("No activity on dial, thread self-destructing")
@@ -59,13 +68,15 @@ class RotaryDial:
                     self.phoneNumber = self.phoneNumber + '0'
                 else:
                     self.phoneNumber = self.phoneNumber + str(self.pulses - 1)
+                    
+                #print("Phone Number: " + self.phoneNumber)
                                 
                 #Reset the state, ready for next number to be dialled
                 self.DiallingNumber = False
                 self.pulses = 0
             
-            #If time since last number dialled > 5 secs assume the complete number is dialled
-            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > 5):
+            #If time since last number dialled > 3 secs assume the complete number is dialled
+            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > 3):
                 self.DiallingFinished = True
                 break
             
