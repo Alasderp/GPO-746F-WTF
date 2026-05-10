@@ -47,16 +47,16 @@ class RotaryDial:
 
     In this code the Pink wire is not used, and the time from last digit dialled is instead counted
     '''
-    def dialHandler(self):
+    def dialHandler(self, timeout):
         timeHandsetLifted = time.time()
         while True:
-            
+            time.sleep(0.001)
             if self.EndListening:
-                print("Rotary Dial EndListening flag set to true, thread self-destructing")
+                print("Rotary Dial End Listening flag set to true, thread self-destructing")
                 break
                                         
             #If no activity after 15 seconds break out of loop
-            if(not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
+            if(timeout and not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
                 print("No activity on dial, thread self-destructing")
                 break
             
@@ -91,6 +91,6 @@ class RotaryDial:
                         self.TimeLastNumberDialled = time.time()
                         self.DiallingNumber = True
                         self.pulses = self.pulses + 1
-                        time.sleep(0.1)
+                        #time.sleep(0.1)
 
-                    self.last = GPIO.input(18)               
+                    self.last = GPIO.input(18)                 
