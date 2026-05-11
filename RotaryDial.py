@@ -20,14 +20,18 @@ class RotaryDial:
         self.DiallingNumber = False
         self.DiallingStarted = False
         self.DiallingFinished = False
+        self.DiallingTimedOut = False
         self.TimeLastNumberDialled = 0
         self.EndListening = False
         
-    def isDialingFinished(self):
-        return self.DiallingFinished
-        
     def isDialingStarted(self):
         return self.DiallingStarted
+    
+    def isDialingFinished(self):
+        return self.DiallingFinished
+    
+    def isDiallingTimedOut(self):
+        return self.DiallingTimedOut
     
     def getPhoneNumber(self):
         return self.phoneNumber
@@ -47,18 +51,26 @@ class RotaryDial:
 
     In this code the Pink wire is not used, and the time from last digit dialled is instead counted
     '''
-    def dialHandler(self, timeout):
+    def dialHandler(self, timeout, endListeninglock, diallingStartedLock):
         timeHandsetLifted = time.time()
         while True:
             time.sleep(0.001)
+            
+            endListeninglock.acquire()
             if self.EndListening:
                 print("Rotary Dial End Listening flag set to true, thread self-destructing")
+                endListeninglock.release()
                 break
+            endListeninglock.release()
                                         
             #If no activity after 15 seconds break out of loop
+            diallingStartedLock.acquire()
             if(timeout and not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
                 print("No activity on dial, thread self-destructing")
+                self.DiallingTimedOut = True
+                diallingStartedLock.release()
                 break
+            diallingStartedLock.release()
             
             #If dialling has started, and 1/4 of a second has elapsed
             #Assume a single digit has been dialled
@@ -82,7 +94,9 @@ class RotaryDial:
             
             if GPIO.event_detected(18):
                 
+                diallingStartedLock.acquire()
                 self.DiallingStarted = True
+                diallingStartedLock.release()
                 
                 current = GPIO.input(18)           
 

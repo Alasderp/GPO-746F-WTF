@@ -12,7 +12,7 @@ GPIO.setwarnings(False)
 GPIO.setup(21,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
 pygame.mixer.init()
-pygame.mixer.music.load("../MiscDocs/UK_dial_tone.mp3")
+pygame.mixer.music.load("../MiscDocs/Sound Effects/UK_dial_tone.mp3")
 
 def handsetMoved(channel):
     global sound
