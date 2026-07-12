@@ -89,10 +89,11 @@ try:
                 dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
                 dialThread.start()
                 
+                #TODO - instead of "callOutgoing" use AT command to check call status
                 while(callOutgoing and cradleSwitch.isHandsetLifted()):
                     time.sleep(0.1)
                     #If a number was dialed, send this via AT command and spawn new dial thread
-                    if(not dialThread.is_alive()):
+                    if(not dialThread.is_alive() and rotaryDial.getPhoneNumber()):
                         print("In-call Number dialled: " + rotaryDial.getPhoneNumber())
                         rotaryDial = RotaryDial() 
                         dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
