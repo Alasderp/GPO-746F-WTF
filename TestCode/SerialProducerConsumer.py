@@ -59,3 +59,49 @@ class SerialProducerConsumer:
     def stop(self):
         self.running = False
         self.ser.close()
+        
+        
+        
+try:   
+    # Usage
+    pc = SerialProducerConsumer('/dev/ttyS0', 115200)
+    pc.start()
+
+    #pc.send(b'AT+CREG?\r\n')
+    
+    mobileNumber = "+447928428483"
+    atCommand = "ATD{0};\r\n".format(mobileNumber)
+    pc.send(atCommand.encode())
+    
+    atCommandPlayDialTone = 'AT+STTONE=1,20,15000\r\n'
+    atcommandPlayOffHook = 'AT+STTONE=1,7,5000\r\n'
+    atCommandStopAudio = "AT+STTONE=0\r\n"
+    
+    #pc.send(atCommandPlayDialTone.encode())
+    time.sleep(2)
+    #pc.send(atCommandStopAudio.encode())
+     
+    # Process data as it arrives
+    while True:
+        time.sleep(0.1)
+        data = pc.receive()
+        if data:
+            for lineBytes in data:
+                lineString = lineBytes.decode("utf-8")
+                print(lineString)
+               
+                if lineString.find("OK") != -1:
+                    print("\nOutgoing call initiated\n")
+                elif lineString.find("VOICE CALL: END") != -1:
+                    print("\nCall was ended\n")
+            
+except KeyboardInterrupt:
+    pc.send(atCommandStopAudio.encode())
+    pc.stop()
+except Exception as e:
+    pc.send(atCommandStopAudio.encode())
+    print(e)
+    pc.stop()
+finally:
+    pc.send(atCommandStopAudio.encode())
+    pc.stop()
