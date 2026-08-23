@@ -14,22 +14,20 @@ rotaryDial = RotaryDial()
 diallingStartedLock = threading.Lock()
 endListeninglock =  threading.Lock()
 
-
-global callIncoming
-callIncoming = False
-
-global callOutgoing
-callOutgoing = False
-
 def button_A_callback(channel):
-    global callIncoming
-    callIncoming = not callIncoming
-    print("Button A was pushed, incoming call flag set to: " + str(callIncoming))
+    print("Button A was pushed")
     
 def button_B_callback(channel):
-    global callOutgoing
-    callOutgoing = not callOutgoing
-    print("Button B was pushed, outgoing call flag set to: " + str(callOutgoing))
+    print("Button B was pushed")
+    
+    
+def isCallIncoming(lineString):
+    callStatus = lineString.split(":")[1].split(",")[2]
+    print("\nCall status: " + callStatus + "\n")
+    if callStatus == "4":
+        return True
+    return False
+
     
 pc = SerialProducerConsumer('/dev/ttyS0', 115200)
 pc.start()
@@ -39,9 +37,14 @@ atCommandPlayOffHook = 'AT+STTONE=1,7,15000\r\n'
 atCommandStopAudio = "AT+STTONE=0\r\n"
 
 atCommandDialOut = "ATD{0};\r\n"
+atCommandAnswerCall = "ATA\r\n"
 atCommandHangUp = "AT+CHUP\r\n"
 
+atCommandListCalls = "AT+CLCC\r\n"
+
 callActive = False
+callIncoming = False
+
 
 try:
 
@@ -58,10 +61,14 @@ try:
     pygame.mixer.init()
     
     while True:
+        
+        #Not needed as any changes in call status automaically logged
+        #pc.send(atCommandListCalls.encode())
                 
         time.sleep(0.1)
         
         data = pc.receive()
+        
         if data:
             for lineBytes in data:
                 lineString = lineBytes.decode("utf-8")
@@ -70,12 +77,15 @@ try:
                 if lineString.find("VOICE CALL: START") != -1:
                     print("\nOutgoing call initiated\n")
                 elif lineString.find("VOICE CALL: END") != -1:
-                    print("\nCall was ended\n")
-            
+                    print("\nCall was ended\n")            
+                elif lineString.startswith("+CLCC:"):
+                    callIncoming = isCallIncoming(lineString)
+
+                          
         #Handset lifted and no call incoming. Prepare to read from rotary dial.    
         if(cradleSwitch.isHandsetLifted() and not callIncoming):
-            print("Handset lifted, no call incoming, ready to dial out")
             
+            print("Handset lifted, no call incoming, ready to dial out")
             
             #Play the dial tone
             pc.send(atCommandPlayDialTone.encode())
@@ -89,9 +99,10 @@ try:
             
             #Then wait until dialling complete/timed-out or handset returned to cradle
             while(dialThread.is_alive() and cradleSwitch.isHandsetLifted()):
-                time.sleep(0.1)
-                diallingStartedLock.acquire()
                 
+                time.sleep(0.1)
+                
+                diallingStartedLock.acquire()  
                 if(rotaryDial.isDialingStarted() and not endDialTonecommandSent):
                     pc.send(atCommandStopAudio.encode())
                     endDialTonecommandSent = True
@@ -106,6 +117,7 @@ try:
             #If a number was dialled, do something with it.
             #Else play a message telling user to hang-up and re-dial
             if(rotaryDial.getPhoneNumber()):
+                
                 phoneNumber = rotaryDial.getPhoneNumber()
                 initiateCallCommand = atCommandDialOut.format(phoneNumber)
                 print("Phone Number dialled: " + phoneNumber)
@@ -119,20 +131,21 @@ try:
                 dialThread.start()
                 
                 while(cradleSwitch.isHandsetLifted()):
+                    
                     time.sleep(0.1)
+                    
                     #If a number was dialed, send this via AT command and spawn new dial thread
                     if(not dialThread.is_alive() and rotaryDial.getPhoneNumber()):
                         print("In-call Number dialled: " + rotaryDial.getPhoneNumber())
                         rotaryDial = RotaryDial() 
                         dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
-                        dialThread.start()                                    
+                        dialThread.start()
+                        
             elif cradleSwitch.isHandsetLifted() and rotaryDial.isDiallingTimedOut():             
                 #If Dialling not started and handset still off-hook play an error message
                 print("Playing off-hook message until handset replaced")
                 pc.send(atCommandPlayOffHook.encode())
-            
-            print("Out-going call ended or dialling timed-out, waiting for handset to be replaced")
-            
+                        
             endListeninglock.acquire()
             rotaryDial.endListening()
             endListeninglock.release()
@@ -146,30 +159,38 @@ try:
             
             print("Handset replaced after call")
              
-            
         #Handset not lifted and call incoming. Ring the bells until handset lifted or call is dropped.    
         elif(not cradleSwitch.isHandsetLifted() and callIncoming):
             
             print("Call incoming, line is free (Handset Not Lifted)")
             
             #Ring bell for as long as there is an incoming call and handset not lifted
-            pygame.mixer.music.load("./MiscDocs/Sound Effects/british_phone_bell.mp3")
+            pygame.mixer.music.load("./Docs/Sound Effects/british_phone_bell.mp3")
             pygame.mixer.music.play(-1)
     
             while not cradleSwitch.isHandsetLifted() and callIncoming:
                 time.sleep(0.1)
+                
+                data = pc.receive()
+    
+                if data:
+                    for lineBytes in data:
+                        lineString = lineBytes.decode("utf-8")
+                        print(lineString)        
+                        if lineString.startswith("+CLCC:"):
+                            callIncoming = isCallIncoming(lineString)
             
             pygame.mixer.music.stop()
+                                                          
+            pc.send(atCommandAnswerCall.encode())                                             
             
-            #Wait until phone is hung-up or call has ended
-            while cradleSwitch.isHandsetLifted() and callIncoming:
-                time.sleep(0.1)
-            
-            print("Incoming call ended, waiting for handset to be replaced")
+            print("Incoming call, waiting for handset to be replaced")
+            #TODO - while waiting for handset replacement read from the serial terminal and update callIncoming
             cradleSwitch.waitForHandsetReplacement()
+            pc.send(atCommandHangUp.encode())
+            callIncoming = False
             print("Handset replaced after call")
-            
-        
+                                           
       
 except KeyboardInterrupt:
     print("Cleaning up pins")
