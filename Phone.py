@@ -42,9 +42,9 @@ atCommandHangUp = "AT+CHUP\r\n"
 
 atCommandListCalls = "AT+CLCC\r\n"
 
-callActive = False
-callIncoming = False
+atCommmandSendDTMF = 'AT+VTS="{0}"\r\n'
 
+callIncoming = False
 
 try:
 
@@ -134,9 +134,27 @@ try:
                     
                     time.sleep(0.1)
                     
+                    data = pc.receive()
+                    if data:
+                        for lineBytes in data:
+                            lineString = lineBytes.decode("utf-8")
+                            print(lineString)        
+                            if lineString.startswith("+CLCC:"):
+                                callIncoming = isCallIncoming(lineString)
+                    
                     #If a number was dialed, send this via AT command and spawn new dial thread
                     if(not dialThread.is_alive() and rotaryDial.getPhoneNumber()):
-                        print("In-call Number dialled: " + rotaryDial.getPhoneNumber())
+                        dtmfChar = rotaryDial.getPhoneNumber()
+                        
+                        if(dtmfChar == "11"):
+                            dtmfChar = "#"
+                        elif(dtmfChar == "22"):
+                            dtmfChar = "*"
+                        
+                        print("In-call Number dialled: " + dtmfChar)
+                        
+                        pc.send(atCommmandSendDTMF.format(dtmfChar).encode())
+                        
                         rotaryDial = RotaryDial() 
                         dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
                         dialThread.start()
@@ -152,7 +170,8 @@ try:
             
             dialThread.join()
             
-            cradleSwitch.waitForHandsetReplacement()
+            while cradleSwitch.isHandsetLifted():
+                time.sleep(0.1)
             
             pc.send(atCommandStopAudio.encode())
             pc.send(atCommandHangUp.encode())
@@ -185,8 +204,17 @@ try:
             pc.send(atCommandAnswerCall.encode())                                             
             
             print("Incoming call, waiting for handset to be replaced")
-            #TODO - while waiting for handset replacement read from the serial terminal and update callIncoming
-            cradleSwitch.waitForHandsetReplacement()
+            
+            while cradleSwitch.isHandsetLifted():
+                time.sleep(0.1)
+                data = pc.receive()
+                if data:
+                    for lineBytes in data:
+                        lineString = lineBytes.decode("utf-8")
+                        print(lineString)        
+                        if lineString.startswith("+CLCC:"):
+                            callIncoming = isCallIncoming(lineString)
+                            
             pc.send(atCommandHangUp.encode())
             callIncoming = False
             print("Handset replaced after call")
