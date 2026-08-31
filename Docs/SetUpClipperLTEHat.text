@@ -45,6 +45,10 @@ To fetch unread SMS messages try
 
 AT+CMGL="REC UNREAD"
 
+To delete any undread or unsent text messages try
+
+AT+CMGD=,2
+
 7. To exit minicom try Ctrl + A then hit X
 
 

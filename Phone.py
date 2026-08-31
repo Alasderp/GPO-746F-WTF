@@ -61,9 +61,6 @@ try:
     pygame.mixer.init()
     
     while True:
-        
-        #Not needed as any changes in call status automaically logged
-        #pc.send(atCommandListCalls.encode())
                 
         time.sleep(0.1)
         
@@ -92,7 +89,7 @@ try:
             
             #Create rotary dial thread and prepare to read in a telephone number
             rotaryDial = RotaryDial() 
-            dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(True,endListeninglock,diallingStartedLock,))
+            dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(True,endListeninglock,diallingStartedLock,3,))
             dialThread.start()
             
             endDialTonecommandSent = False
@@ -127,7 +124,7 @@ try:
                 
                 #Create another dial thread in case presented with an in-call menu
                 rotaryDial = RotaryDial() 
-                dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
+                dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,0.25,))
                 dialThread.start()
                 
                 while(cradleSwitch.isHandsetLifted()):
@@ -146,17 +143,12 @@ try:
                     if(not dialThread.is_alive() and rotaryDial.getPhoneNumber()):
                         dtmfChar = rotaryDial.getPhoneNumber()
                         
-                        if(dtmfChar == "11"):
-                            dtmfChar = "#"
-                        elif(dtmfChar == "22"):
-                            dtmfChar = "*"
-                        
                         print("In-call Number dialled: " + dtmfChar)
                         
                         pc.send(atCommmandSendDTMF.format(dtmfChar).encode())
                         
                         rotaryDial = RotaryDial() 
-                        dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,))
+                        dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,0.25,))
                         dialThread.start()
                         
             elif cradleSwitch.isHandsetLifted() and rotaryDial.isDiallingTimedOut():             

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 # Orange wire connected to GPIO18
+# Pink wire to GPIO 26
 # Brown wire to GND
 
 import RPi.GPIO as GPIO
@@ -13,6 +14,8 @@ class RotaryDial:
         GPIO.setwarnings(False)
         GPIO.setup(18,GPIO.IN,pull_up_down=GPIO.PUD_UP)
         GPIO.add_event_detect(18, GPIO.BOTH)
+        GPIO.setup(26,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(26, GPIO.BOTH)
 
         self.pulses = 0
         self.last = 1
@@ -41,17 +44,13 @@ class RotaryDial:
 
 
     '''
-    When the rotary dial is pulled back, the circuit is complete
-
-    The dial is then released and winds down. A switch will open and close (Connected to GPIO 18 via Orange wire) during this time.
+    The dial is wound back then released. A switch will open and close (Connected to GPIO 18 via Orange wire) during this time.
     Count how many times the circuit is interrupted on the orange wire to calculate the number dialled
 
-    On the Pink wire, the circuit remains complete from when the dial is wound back to when it stops rotating.
-    This is used to determine when a digit has started and finished dialling.
-
-    In this code the Pink wire is not used, and the time from last digit dialled is instead counted
+    On the Pink wire (GPIO 26), the circuit remains complete from when the dial is wound back to when it stops rotating.
+    This is used to determine when a digit has started and finished dialling
     '''
-    def dialHandler(self, timeout, endListeninglock, diallingStartedLock):
+    def dialHandler(self, timeout, endListeninglock, diallingStartedLock, dialWaitTime):
         timeHandsetLifted = time.time()
         while True:
             time.sleep(0.001)
@@ -72,14 +71,12 @@ class RotaryDial:
                 break
             diallingStartedLock.release()
             
-            #If dialling has started, and 1/4 of a second has elapsed
-            #Assume a single digit has been dialled
-            if(self.DiallingNumber and (time.time() - self.TimeLastNumberDialled) > 0.25):
+            if(self.DiallingNumber and GPIO.input(26) and GPIO.input(18)):
                 
-                if(self.pulses == 11):
+                if(self.pulses == 10):
                     self.phoneNumber = self.phoneNumber + '0'
                 else:
-                    self.phoneNumber = self.phoneNumber + str(self.pulses - 1)
+                    self.phoneNumber = self.phoneNumber + str(self.pulses)
                     
                 #print("Phone Number: " + self.phoneNumber)
                                 
@@ -87,12 +84,12 @@ class RotaryDial:
                 self.DiallingNumber = False
                 self.pulses = 0
             
-            #If time since last number dialled > 3 secs assume the complete number is dialled
-            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > 3):
+            #If time since last number dialled exceeds X secs assume the complete number is dialled
+            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > dialWaitTime):
                 self.DiallingFinished = True
                 break
             
-            if GPIO.event_detected(18):
+            if GPIO.event_detected(18) and not GPIO.input(26):
                 
                 diallingStartedLock.acquire()
                 self.DiallingStarted = True

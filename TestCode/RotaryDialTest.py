@@ -11,6 +11,9 @@ GPIO.setwarnings(False)
 GPIO.setup(18,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 GPIO.add_event_detect(18, GPIO.BOTH)
 
+GPIO.setup(26,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+GPIO.add_event_detect(26, GPIO.BOTH)
+
 pulses = 0
 last = 1
 phoneNumber = ''
@@ -25,18 +28,20 @@ Count how many times the circuit is interrupted to calculate the number dialled
 try:
     while True:
         
-        if(dialStarted and (time.time() - start) > 0.25):
+        #print("GPIO 26: " + str(GPIO.input(26)))
+        
+        if(dialStarted and GPIO.input(26) and GPIO.input(18)):
             
-            if(pulses == 11):
+            if(pulses == 10):
                 phoneNumber = phoneNumber + '0'
             else:
-                phoneNumber = phoneNumber + str(pulses - 1)
+                phoneNumber = phoneNumber + str(pulses)
 
             print("Phone Number: " + phoneNumber)
             dialStarted = False
             pulses = 0
         
-        if GPIO.event_detected(18):
+        if GPIO.event_detected(18) and GPIO.input(26) == False:
             
             current = GPIO.input(18)           
 
@@ -45,8 +50,7 @@ try:
                     start = time.time()
                     dialStarted = True
                     pulses = pulses + 1
-                    time.sleep(0.1)
-
+                    
                 last = GPIO.input(18)
                 
 except KeyboardInterrupt:
