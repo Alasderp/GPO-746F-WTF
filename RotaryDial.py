@@ -52,56 +52,68 @@ class RotaryDial:
     '''
     def dialHandler(self, timeout, endListeninglock, diallingStartedLock, dialWaitTime):
         timeHandsetLifted = time.time()
-        while True:
-            time.sleep(0.001)
-            
-            endListeninglock.acquire()
-            if self.EndListening:
-                print("Rotary Dial End Listening flag set to true, thread self-destructing")
+        try:
+            while True:
+                time.sleep(0.001)
+                
+                endListeninglock.acquire()
+                if self.EndListening:
+                    print("Rotary Dial End Listening flag set to true, thread self-destructing")
+                    endListeninglock.release()
+                    break
                 endListeninglock.release()
-                break
-            endListeninglock.release()
-                                        
-            #If no activity after 15 seconds break out of loop
-            diallingStartedLock.acquire()
-            if(timeout and not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
-                print("No activity on dial, thread self-destructing")
-                self.DiallingTimedOut = True
-                diallingStartedLock.release()
-                break
-            diallingStartedLock.release()
-            
-            if(self.DiallingNumber and GPIO.input(26) and GPIO.input(18)):
-                
-                if(self.pulses == 10):
-                    self.phoneNumber = self.phoneNumber + '0'
-                else:
-                    self.phoneNumber = self.phoneNumber + str(self.pulses)
-                    
-                #print("Phone Number: " + self.phoneNumber)
-                                
-                #Reset the state, ready for next number to be dialled
-                self.DiallingNumber = False
-                self.pulses = 0
-            
-            #If time since last number dialled exceeds X secs assume the complete number is dialled
-            if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > dialWaitTime):
-                self.DiallingFinished = True
-                break
-            
-            if GPIO.event_detected(18) and not GPIO.input(26):
-                
+                                            
+                #If no activity after 15 seconds break out of loop
                 diallingStartedLock.acquire()
-                self.DiallingStarted = True
+                if(timeout and not self.DiallingStarted and (time.time() - timeHandsetLifted) > 15):
+                    print("No activity on dial, thread self-destructing")
+                    self.DiallingTimedOut = True
+                    diallingStartedLock.release()
+                    break
                 diallingStartedLock.release()
                 
-                current = GPIO.input(18)           
+                if(self.DiallingNumber and GPIO.input(26) and GPIO.input(18)):
+                    
+                    if(self.pulses == 10):
+                        self.phoneNumber = self.phoneNumber + '0'
+                    else:
+                        self.phoneNumber = self.phoneNumber + str(self.pulses)
+                        
+                    #print("Phone Number: " + self.phoneNumber)
+                                    
+                    #Reset the state, ready for next number to be dialled
+                    self.DiallingNumber = False
+                    self.pulses = 0
+                
+                #If time since last number dialled exceeds X secs assume the complete number is dialled
+                if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > dialWaitTime):
+                    self.DiallingFinished = True
+                    break
+                
+                if GPIO.event_detected(18) and not GPIO.input(26):
+                    
+                    diallingStartedLock.acquire()
+                    self.DiallingStarted = True
+                    diallingStartedLock.release()
+                    
+                    current = GPIO.input(18)           
 
-                if(self.last != current):                      
-                    if(current != 0):
-                        self.TimeLastNumberDialled = time.time()
-                        self.DiallingNumber = True
-                        self.pulses = self.pulses + 1
-                        #time.sleep(0.1)
+                    if(self.last != current):                      
+                        if(current != 0):
+                            self.TimeLastNumberDialled = time.time()
+                            self.DiallingNumber = True
+                            self.pulses = self.pulses + 1
+                            #time.sleep(0.1)
 
-                    self.last = GPIO.input(18)                 
+                        self.last = GPIO.input(18)
+                
+        except KeyboardInterrupt:
+            print("Cleaning up pins")
+            GPIO.cleanup([18, 26])
+        except Exception as e:
+            print(e)
+            print("Cleaning up pins")
+            GPIO.cleanup([18, 26])
+        finally:
+            print("Cleaning up pins")
+            GPIO.cleanup([18, 26])

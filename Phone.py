@@ -215,13 +215,16 @@ try:
 except KeyboardInterrupt:
     print("Cleaning up pins")
     pc.send(atCommandStopAudio.encode())
+    pc.send(atCommandHangUp.encode())
     GPIO.cleanup()
 except Exception as e:
     print(e)
     print("Cleaning up pins")
     pc.send(atCommandStopAudio.encode())
+    pc.send(atCommandHangUp.encode())
     GPIO.cleanup()
 finally:
     print("Cleaning up pins")
     pc.send(atCommandStopAudio.encode())
+    pc.send(atCommandHangUp.encode())
     GPIO.cleanup()
