@@ -1,0 +1,16 @@
+1. Save service script to below location
+
+/etc/systemd/system/myscript.service
+
+2. To enable the script at boot-up
+
+sudo systemctl daemon-reload
+sudo systemctl enable RotaryPhone.service
+
+sudo reboot
+
+3. To disable the service
+
+sudo systemctl RotaryPhone.service
+sudo systemctl disable RotaryPhone.service
+
