@@ -1,16 +1,24 @@
 1. Save service script to below location
 
-/etc/systemd/system/myscript.service
+/home/alasdair/.config/systemd/user/myscript.service
 
 2. To enable the script at boot-up
 
-sudo systemctl daemon-reload
-sudo systemctl enable RotaryPhone.service
+systemctl --user daemon-reload
+systemctl --user enable RotaryPhone.service
 
 sudo reboot
 
+OR
+
+systemctl --user start RotaryPhone.service
+
 3. To disable the service
 
-sudo systemctl RotaryPhone.service
-sudo systemctl disable RotaryPhone.service
+systemctl --user stop RotaryPhone.service
+systemctl --user disable RotaryPhone.service
+
+4. To check the status of a service
+
+systemctl --user status RotaryPhone.service
 

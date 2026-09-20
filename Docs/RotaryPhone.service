@@ -2,6 +2,7 @@
 Description=GPO-746F-WTF
 
 [Service]
+ExecStartPre=/bin/sleep 30
 ExecStart="/home/alasdair/Pi Projects/Rotary Phone/GPO-746F-WTF/.venv/bin/python3" "/home/alasdair/Pi Projects/Rotary Phone/GPO-746F-WTF/Phone.py"
 Restart=on-failure
 

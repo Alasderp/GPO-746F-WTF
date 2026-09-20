@@ -176,7 +176,7 @@ try:
             print("Call incoming, line is free (Handset Not Lifted)")
             
             #Ring bell for as long as there is an incoming call and handset not lifted
-            pygame.mixer.music.load("./Docs/Sound Effects/british_phone_bell.mp3")
+            pygame.mixer.music.load("/home/alasdair/Pi Projects/Rotary Phone/GPO-746F-WTF/Docs/Sound Effects/british_phone_bell.mp3")
             pygame.mixer.music.play(-1)
     
             while not cradleSwitch.isHandsetLifted() and callIncoming:
