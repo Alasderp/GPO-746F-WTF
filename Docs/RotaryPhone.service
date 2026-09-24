@@ -7,4 +7,4 @@ ExecStart="/home/alasdair/Pi Projects/Rotary Phone/GPO-746F-WTF/.venv/bin/python
 Restart=on-failure
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
