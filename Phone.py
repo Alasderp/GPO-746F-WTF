@@ -12,7 +12,8 @@ from SerialProducerConsumer import SerialProducerConsumer
 cradleSwitch = CradleSwitch()
 rotaryDial = RotaryDial()
 diallingStartedLock = threading.Lock()
-endListeninglock =  threading.Lock()
+endListeninglock = threading.Lock()
+phoneNumberLock =  threading.Lock()
 
 def button_A_callback(channel):
     print("Button A was pushed")
@@ -89,7 +90,7 @@ try:
             
             #Create rotary dial thread and prepare to read in a telephone number
             rotaryDial = RotaryDial() 
-            dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(True,endListeninglock,diallingStartedLock,3,))
+            dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(True,endListeninglock,diallingStartedLock,phoneNumberLock,3,False))
             dialThread.start()
             
             endDialTonecommandSent = False
@@ -124,7 +125,7 @@ try:
                 
                 #Create another dial thread in case presented with an in-call menu
                 rotaryDial = RotaryDial() 
-                dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,0.25,))
+                dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,phoneNumberLock,0,True))
                 dialThread.start()
                 
                 while(cradleSwitch.isHandsetLifted()):
@@ -139,17 +140,14 @@ try:
                             if lineString.startswith("+CLCC:"):
                                 callIncoming = isCallIncoming(lineString)
                     
-                    #If a number was dialed, send this via AT command and spawn new dial thread
-                    if(not dialThread.is_alive() and rotaryDial.getPhoneNumber()):
+                    #If a number was dialled, send this via AT command and spawn new dial thread
+                    phoneNumberLock.acquire()       
+                    if(rotaryDial.getPhoneNumber()):
                         dtmfChar = rotaryDial.getPhoneNumber()
-                        
                         print("In-call Number dialled: " + dtmfChar)
-                        
                         pc.send(atCommmandSendDTMF.format(dtmfChar).encode())
-                        
-                        rotaryDial = RotaryDial() 
-                        dialThread = threading.Thread(target=rotaryDial.dialHandler, args=(False,endListeninglock,diallingStartedLock,0.25,))
-                        dialThread.start()
+                        rotaryDial.setPhoneNumber('')
+                    phoneNumberLock.release()                    
                         
             elif cradleSwitch.isHandsetLifted() and rotaryDial.isDiallingTimedOut():             
                 #If Dialling not started and handset still off-hook play an error message

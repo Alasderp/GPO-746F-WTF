@@ -39,6 +39,9 @@ class RotaryDial:
     def getPhoneNumber(self):
         return self.phoneNumber
     
+    def setPhoneNumber(self, phoneNumber):
+        self.phoneNumber = phoneNumber
+    
     def endListening(self):
         self.EndListening = True
 
@@ -50,7 +53,7 @@ class RotaryDial:
     On the Pink wire (GPIO 26), the circuit remains complete from when the dial is wound back to when it stops rotating.
     This is used to determine when a digit has started and finished dialling
     '''
-    def dialHandler(self, timeout, endListeninglock, diallingStartedLock, dialWaitTime):
+    def dialHandler(self, timeout, endListeninglock, diallingStartedLock, phoneNumberLock, dialWaitTime, menuMode):
         timeHandsetLifted = time.time()
         try:
             while True:
@@ -74,10 +77,12 @@ class RotaryDial:
                 
                 if(self.DiallingNumber and GPIO.input(26) and GPIO.input(18)):
                     
+                    phoneNumberLock.acquire()   
                     if(self.pulses == 10):
                         self.phoneNumber = self.phoneNumber + '0'
                     else:
                         self.phoneNumber = self.phoneNumber + str(self.pulses)
+                    phoneNumberLock.release()                     
                         
                     #print("Phone Number: " + self.phoneNumber)
                                     
@@ -86,7 +91,7 @@ class RotaryDial:
                     self.pulses = 0
                 
                 #If time since last number dialled exceeds X secs assume the complete number is dialled
-                if(self.phoneNumber and (time.time() - self.TimeLastNumberDialled) > dialWaitTime):
+                if(self.phoneNumber and ((time.time() - self.TimeLastNumberDialled) > dialWaitTime) and not menuMode):
                     self.DiallingFinished = True
                     break
                 
