@@ -45,7 +45,7 @@ To fetch unread SMS messages try
 
 AT+CMGL="REC UNREAD"
 
-To delete any undread or unsent text messages try
+To delete any read or sent text messages try
 
 AT+CMGD=,2
 
