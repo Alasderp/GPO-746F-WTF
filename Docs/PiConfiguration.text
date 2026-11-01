@@ -1,0 +1,39 @@
+Enable Shutdown pins
+
+/boot/firmware/config.txt 
+
+Add new line at the bottom "dtoverlay=gpio-shutdown"
+
+
+
+Install Necessary Packages
+
+python3 -m venv --system-site-packages .venv
+
+source .venv/bin/activate
+
+python3 -m pip install pyserial
+python3 -m pip install pygame
+
+
+If facing audio issue when using USB Speaker with systemd
+
+cat /proc/asound/cards
+
+Replace the number below with value from previous step for the usb speaker
+
+Create file /etc/asound.conf
+
+defaults.pcm.card 1
+defaults.ctl.card 1
+
+
+To test the USB speaker
+
+Run 'cat /proc/asound/modules' to see what devices are being detected.
+
+Run 'speaker-test -c2 -twav -l7 -D plughw:1,0' - that should play a female test voice.
+
+
+On the Pi Zero, sometimes no USB audio device will be detected when rebooting via power-button or commandline
+May need to hot-plug the device, unplug and replug Pi into power supply after shutdown, or use USB hub

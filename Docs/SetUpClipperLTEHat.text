@@ -84,3 +84,27 @@ After the ">" paste the contents of the hexdump
 
 
 
+
+If Using SIM Card for Data
+
+Create a new config from the reference one
+
+sudo cp /etc/ppp/peers/provider /etc/ppp/peers/clipper
+
+sudo nano /etc/ppp/peers/clipper
+
+1. Pop an # before the user line to comment it out
+2. On the 'connect' line, replace pap with gprs.
+3. On this same line, replace the ******* with your APN
+4. Change /dev/modem to /dev/ttyS0 (or /dev/ttyAMA0 for Pi5).
+5. At the end of the file, add the line nocrtscts to disable hardware flow control (RTS, and CTS)
+6. Add the line local to disable modem control lines (CD, and DTR)
+
+To test
+
+sudo pon clipper
+
+ping -I ppp0 1.1.1.1
+
+
+

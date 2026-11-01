@@ -21,4 +21,3 @@ systemctl --user disable RotaryPhone.service
 4. To check the status of a service
 
 systemctl --user status RotaryPhone.service
-
