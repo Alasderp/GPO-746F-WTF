@@ -2,6 +2,14 @@
 
 /home/alasdair/.config/systemd/user/myscript.service
 
+OR 
+
+When running with headless OS
+
+/etc/systemd/system/ 
+
+and do not include the --user flag
+
 2. To enable the script at boot-up
 
 systemctl --user daemon-reload
